@@ -1,0 +1,48 @@
+import cv2
+import numpy as np
+import pyautogui
+import time
+
+def detect_target():
+    # Take a screenshot using PyAutoGUI
+    screenshot = pyautogui.screenshot()
+    screenshot = np.array(screenshot)
+
+    # Convert the screenshot to BGR color space (which OpenCV uses)
+    frame = cv2.cvtColor(screenshot, cv2.COLOR_RGB2BGR)
+
+    # Define the color range for detecting the target (e.g., red color)
+    lower_color = np.array([0, 0, 200])
+    upper_color = np.array([50, 50, 255])
+
+    # Create a mask for the target color
+    mask = cv2.inRange(frame, lower_color, upper_color)
+
+    # Find contours in the mask
+    contours, _ = cv2.findContours(mask, cv2.RETR_TREE, cv2.CHAIN_APPROX_SIMPLE)
+
+    if contours:
+        # Find the largest contour (assuming it's the target)
+        target_contour = max(contours, key=cv2.contourArea)
+
+        # Get the coordinates of the center of the target
+        M = cv2.moments(target_contour)
+        if M["m00"] != 0:
+            cX = int(M["m10"] / M["m00"])
+            cY = int(M["m01"] / M["m00"])
+            return cX, cY
+
+    return None
+
+def snap_to_target(target_x, target_y):
+    # Move the mouse cursor to the target coordinates
+    pyautogui.moveTo(target_x, target_y)
+
+# Main loop
+while True:
+    target_position = detect_target()
+    if target_position:
+        snap_to_target(target_position[0], target_position[1])
+
+    # Add a short delay to avoid excessive CPU usage
+    time.sleep(0.01)
